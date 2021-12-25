@@ -1,0 +1,9 @@
+# ignore these folders
+__pycache__
+
+#ignore these files
+.vscode
+.ipynb_checkpoints
+*/.ipynb_checkpoints/* .ipynb
+
+

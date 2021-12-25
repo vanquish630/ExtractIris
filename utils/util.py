@@ -13,159 +13,8 @@ import face_alignment
 import colorsys
 from sklearn.cluster import KMeans
 import math
-from .face_landmark_detector import FaceLandmarkDetector
 
 
-
-
-# def align_face(image_path, align_size=256):
-#   """Aligns a given face."""
-#   model = FaceLandmarkDetector(align_size)
-#   face_infos = model.detect(image_path)
-#   imgs = []
-#   if len(face_infos) != 0:
-#     face_infos = face_infos
-#     for info in face_infos:
-#       imgs.append(model.align(info))
-
-#   else:
-#     return None
-#   return imgs
-
-
-def align_face(image_path, align_size=256 , use_hog = False):
-  """Aligns a given face."""
-  model = FaceLandmarkDetector(align_size , use_hog= use_hog)
-  face_infos = model.detect(image_path)
-
-  aligned_images = []
-  aligned_images_names = []
-
-
-  if len(face_infos) != 0:
-
-    if len(face_infos) == 1:
-      info = face_infos[0]
-      aligned_image = model.align(info)
-      aligned_image_name = info['image_path'].split('/')[-1].split('.')[0]+".jpg"
-      return aligned_image , aligned_image_name
-
-    elif len(face_infos) > 1:
-      for b,info in enumerate(face_infos):
-        aligned_image = model.align(info)
-        aligned_image_name = info['image_path'].split('/')[-1].split('.')[0]+f'_{b}.jpg'
-        
-        aligned_images.append(aligned_image)
-        aligned_images_names.append(aligned_image_name)
-
-      print(len(aligned_images) , len(aligned_images_names))
-      return aligned_images,aligned_images_names
-  else:
-    return None, None
-
-
-def align(image_path):
-  """Aligns an unloaded image."""
-  aligned_images , aligned_images_names  = align_face(image_path,
-                             align_size=256)
-  return aligned_images , aligned_images_names
-
-
-
-
-
-def load_image(path):
-  """Loads an image from disk.
-
-  NOTE: This function will always return an image with `RGB` channel order for
-  color image and pixel range [0, 255].
-
-  Args:
-    path: Path to load the image from.
-
-  Returns:
-    An image with dtype `np.ndarray` or `None` if input `path` does not exist.
-  """
-  if not os.path.isfile(path):
-    return None
-
-  image = Image.open(path)
-  return image
-
-def flatten(t):
-    return [item for sublist in t for item in sublist]
-
-    
-def load_images_from_dir(dspth,align_size = 256, need_align = False , use_hog = False):
-
-  images = []
-  image_names =  natsorted(os.listdir(dspth))
-  aligned_images_names = []
-
-
-  for image_name in natsorted(os.listdir(dspth)):
-    if image_name.split('.')[-1].lower() is 'jpg' or 'png' or 'jpeg' :
-      if need_align:
-        aligned_image , aligned_name  = align_face((os.path.join(dspth,image_name)),align_size=align_size , use_hog = use_hog )
-
-      else:
-        aligned_image = plt.imread(os.path.join(dspth,image_name))
-        aligned_image = cv2.resize(aligned_image , (align_size,align_size))
-        aligned_name = image_name
-
-
-      images.append(aligned_image)
-      if type(aligned_image) == list :
-        images = flatten(images)
-
-      aligned_images_names.append(aligned_name)
-      if type(aligned_image) == list:
-        aligned_images_names = flatten(aligned_images_names)
-
-      
-
-  return images,aligned_images_names
-
-
-def imshow(images, col, viz_size=256):
-  """Shows images in one figure."""
-  num, height, width, channels = images.shape
-  assert num % col == 0
-  row = num // col
-
-  fused_image = np.zeros((viz_size * row, viz_size * col, channels), dtype=np.uint8)
-
-  for idx, image in enumerate(images):
-    i, j = divmod(idx, col)
-    y = i * viz_size
-    x = j * viz_size
-    if height != viz_size or width != viz_size:
-      image = cv2.resize(image, (viz_size, viz_size))
-    fused_image[y:y + viz_size, x:x + viz_size] = image
-
-  fused_image = np.asarray(fused_image, dtype=np.uint8)
-  data = io.BytesIO()
-  if channels == 4:
-    Image.fromarray(fused_image).save(data, 'png')
-  elif channels == 3:
-    Image.fromarray(fused_image).save(data, 'jpeg')
-  else:
-    raise ValueError('Image channel error')
-  im_data = data.getvalue()
-  disp = IPython.display.display(IPython.display.Image(im_data))
-  return disp
-
-
-def get_landmarks(images):
-  landmarks = []
-  fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._2D, flip_input=False)
-  for img in images:
-    pred = fa.get_landmarks(img)
-    pred = np.array(pred)
-    pred.resize((68,2))
-    landmarks.append(pred)
-    
-  return landmarks
 
 
 def calcHist(image , mask = None):
@@ -229,7 +78,7 @@ def majorColors(image , number_color = 2):
 
   # plot each color sorted by increasing Value (brightness)
   # pyplot uses normalized r,g,b in range 0 to 1
-  fig = plt.figure()
+  #fig = plt.figure()
   gray = None
   length = len(ccv_list)
   colours = []
@@ -247,7 +96,7 @@ def majorColors(image , number_color = 2):
       # print(s*100)
       # print(v*100)
       count = item[1]
-      plt.bar(i, count, color=((r,g,b)))
+      #plt.bar(i, count, color=((r,g,b)))
 
   return colours
 
@@ -259,11 +108,20 @@ def hsvDist(hsv1 , hsv2):
 
   return distance
 
-def returnIrisTemplate(iris_template_folder ='./iris_template'):
+def returnIrisTemplate(iris_template_folder ='./utils/iris_templates'):
   iris_green = plt.imread(os.path.join(iris_template_folder,"iris_green.jpg"))
   iris_brown = plt.imread(os.path.join(iris_template_folder,"iris_brown.jpg"))
   iris_blue =  plt.imread(os.path.join(iris_template_folder,"iris_blue.jpg"))
   iris_black = plt.imread(os.path.join(iris_template_folder,"iris_black.jpg"))
   iris_mask =  plt.imread(os.path.join(iris_template_folder, "iris_mask.png"))
+
+  iris_blue = cv2.resize(iris_blue,(400,400))
+  iris_brown = cv2.resize(iris_brown,(400,400))
+  iris_black = cv2.resize(iris_black,(400,400))
+  iris_green = cv2.resize(iris_green,(400,400))
+  iris_mask = cv2.resize(iris_mask,(400,400))
+  iris_mask = (cv2.cvtColor(iris_mask , cv2.COLOR_RGBA2RGB)*255).astype(np.uint8)
+
+
   return iris_green,iris_brown,iris_blue,iris_black,iris_mask
 

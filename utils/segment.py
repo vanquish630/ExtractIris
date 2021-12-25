@@ -9,13 +9,13 @@ from skimage import exposure
 from PIL import Image
 import colorsys
 from sklearn.cluster import KMeans
-from models.segmentation_models.model import BiSeNet
+from models.model import BiSeNet
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 
-def segment_image(image,modelpath = '.models/pretrained_models/79999_iter.pth', size = 256):
+def segment_image(image,modelpath = './pretrained_models/79999_iter.pth', size = 256):
     n_classes = 19
     net = BiSeNet(n_classes=n_classes)
     net.load_state_dict(torch.load(modelpath, map_location=DEVICE) )
@@ -44,7 +44,7 @@ def segment_image(image,modelpath = '.models/pretrained_models/79999_iter.pth', 
     return output
 
 
-def segment_image_aspect_ratio(image,modelpath = '.models/pretrained_models/79999_iter.pth', size = 256):
+def segment_image_aspect_ratio(image,modelpath = './pretrained_models/79999_iter.pth', size = 256):
     n_classes = 19
     net = BiSeNet(n_classes=n_classes)
     net.load_state_dict(torch.load(modelpath, map_location=DEVICE) )
@@ -62,20 +62,22 @@ def segment_image_aspect_ratio(image,modelpath = '.models/pretrained_models/7999
 )
     #image = cv2.resize(image, (512,512),interpolation = cv2.INTER_NEAREST)
 
-    #size = 256,256
+    #size = 256,256 0-255
     with torch.no_grad():
-      img = image
+      #print(image.shape , image.max())
+      img =  (image)
       basewidth = max(512,np.array(img).shape[0])
       wpercent = (basewidth/float(img.size[0]))
       hsize = int((float(img.size[1])*float(wpercent)))
       img = img.resize((basewidth,hsize), Image.ANTIALIAS,)
-      img = to_tensor(img)
+      image = img
+      img = to_tensor(image)
       img = torch.unsqueeze(img, 0)
       img = img.to(DEVICE)
       out = net(img)[0]
       img = inv_normalize(img)
       output = (np.transpose(np.array(out.squeeze(0).cpu()),(1,2,0)).argmax(2).astype(np.uint8))
-    return output, image
+    return output, np.transpose(np.array(img.squeeze(0).cpu()),(1,2,0))
 
 def return_hair_mask(image):
   out = segment_image(image)

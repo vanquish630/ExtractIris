@@ -11,6 +11,7 @@ from PIL import Image
 import colorsys
 from sklearn.cluster import KMeans
 import math
+import time
 import matplotlib.pyplot as plt
 from utils.util import calcHist , hsvDist , returnIrisTemplate
 from utils.segment import segment_image_aspect_ratio
@@ -64,23 +65,24 @@ def returnEye(image , eye_ind=4):
   return eye_crop , eyeCenter, input
 
 
-def histMatchIris(image, base_col = None,iris_template_folder = './iris_template',eye_left_right = 4):
+def histMatchIris(image,iris_template_folder = '/ExtractIris/utils/iris_templates',eye_left_right = 4):
 
-  iris_green,iris_brown,iris_blue,iris_black,iris_mask = returnIrisTemplate(iris_template_folder)
-  iris_blue = cv2.resize(iris_blue,(400,400))
-  iris_brown = cv2.resize(iris_brown,(400,400))
-  iris_black = cv2.resize(iris_black,(400,400))
-  iris_green = cv2.resize(iris_green,(400,400))
-  iris_mask = cv2.resize(iris_mask,(400,400))
-  iris_mask = (cv2.cvtColor(iris_mask , cv2.COLOR_RGBA2RGB)*255).astype(np.uint8)
+  iris_green,iris_brown,iris_blue,iris_black,iris_mask = returnIrisTemplate()
+  
 
 
   base = [iris_blue , iris_brown, iris_green, iris_black]
 
   eyeWhole,eye, inp = returnEye(image , eye_left_right)
+
   if eye is None:
     return None, None, None
-  eye =np.array( eye*255, dtype = np.uint8) 
+
+  elif eye.shape[0]*eye.shape[1]<4:
+    return None, None, None
+  
+
+  eye = np.array( eye*255, dtype = np.uint8) 
   ref = eye
 
   method = cv2.HISTCMP_BHATTACHARYYA
@@ -89,29 +91,32 @@ def histMatchIris(image, base_col = None,iris_template_folder = './iris_template
   dg = cv2.compareHist(calcHist(ref), calcHist(iris_green,mask = cv2.cvtColor(iris_mask , cv2.COLOR_RGB2GRAY)), method)
   dblck = cv2.compareHist(calcHist(ref), calcHist(iris_black,mask = cv2.cvtColor(iris_mask , cv2.COLOR_RGB2GRAY)), method)
 
-  if base_col == None:
     #print(np.argmax([dbl,dbr,dg]))
-    src = base[np.argmax([dbl,dbr,dg,dblck])]
-  else:
-    src = base[base_col]
+  src = base[np.argmax([dbl,dbr,dg,dblck])]
+  
+
+
   matched = exposure.match_histograms(src, ref, multichannel=True)
   matched = matched*(iris_mask/255)
   matched = cv2.blur(matched , (3,3)).astype(np.uint8)
 
 
-  (fig, axs) =  plt.subplots(nrows=1, ncols=4, figsize=(18, 6))
+  # (fig, axs) =  plt.subplots(nrows=1, ncols=4, figsize=(18, 6))
 
-  axs[0].imshow(inp)
-  axs[0].axis('off')
+  # axs[0].imshow(inp)
+  # axs[0].axis('off')
 
-  axs[1].imshow(eyeWhole)
-  axs[1].axis('off')
+  # axs[1].imshow(eyeWhole)
+  # axs[1].axis('off')
 
-  axs[2].imshow(eye)
-  axs[2].axis('off')
+  # axs[2].imshow(eye)
+  # axs[2].axis('off')
 
-  axs[3].imshow(matched/255)
-  axs[3].axis('off')
+  # axs[3].imshow(matched/255)
+  # axs[3].axis('off')
+
+  # plt.show()
+  # time.sleep(1)
 
 
   #print(dbl , dbr , dg)
@@ -141,19 +146,19 @@ def makeIris(colour,predIris , iris_brown , iris_blue, iris_green , iris_black):
   majorColorIndex = np.argmin(distances)
 
   if majorColorIndex == 0:
-    print("brown")
+    #print("brown")
     iris = cv2.addWeighted(iris_brown, 0.65, predIris, 0.35, 0)
   
   elif majorColorIndex == 1:
-        print("blue")
+        #print("blue")
         iris = cv2.addWeighted(iris_blue, 0.2, predIris, 0.8, 0)
 
   elif majorColorIndex == 2:
-        print("green")
+        #print("green")
         iris = cv2.addWeighted(iris_green, 0.2, predIris, 0.8, 0)
 
   elif majorColorIndex == 3:
-        print("black")
+        #print("black")
         iris = cv2.addWeighted(iris_black, 0.65, predIris, 0.35, 0)
 
 
@@ -163,7 +168,7 @@ def makeIris(colour,predIris , iris_brown , iris_blue, iris_green , iris_black):
 def combineIris(irisL,irisR):
   if irisL is None:
     iris = irisR
-  if irisR is None:
+  elif irisR is None:
     iris = irisL
   else:
     iris = cv2.addWeighted(irisR, 0.5, irisL, 0.5, 0)
