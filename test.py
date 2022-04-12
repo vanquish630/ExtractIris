@@ -84,9 +84,11 @@ def main():
           #print(irisL,irisR)
 
           iris = combineIris(irisL,irisR)
-          #print(iris.shape)
-
-          plt.imsave(os.path.join('results',img),iris)
+          if iris is None:
+               print("No iris found in image.")
+          else:
+               #print(iris.shape)
+               plt.imsave(os.path.join('results',img),iris)
 
     print(f"Completed generating iris of {len(images)} images")
 

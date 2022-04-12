@@ -170,6 +170,8 @@ def combineIris(irisL,irisR):
     iris = irisR
   elif irisR is None:
     iris = irisL
+  elif irisR is None and irisL is None:
+    iris = None
   else:
     iris = cv2.addWeighted(irisR, 0.5, irisL, 0.5, 0)
 
